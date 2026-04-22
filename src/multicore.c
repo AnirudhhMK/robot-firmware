@@ -4,12 +4,15 @@
 #define __sev asm volatile("sev")
 
 extern const uint32_t _core1vectorTable[];
-extern const void entry_core1();
-
+extern void main_core1(void);
+void __attribute__((weak)) main_core1(void) {
+  for (;;)
+    ;
+}
 void launch_core1() {
   static const uint32_t cmd_seq[] = {0,          0,
                                      1,          (uintptr_t)_core1vectorTable,
-                                     0x21030000, (uintptr_t)&entry_core1};
+                                     0x21030000, (uintptr_t)&main_core1};
   uint32_t seq = 0;
   do {
     const uint32_t cmd = cmd_seq[seq];

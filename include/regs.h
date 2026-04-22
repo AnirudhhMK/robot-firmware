@@ -168,4 +168,44 @@ typedef struct {
 } sio_hw_t;
 #define SIO ((sio_hw_t *const)sio_base)
 
+typedef struct {
+  volatile uint32_t TIMEHW; // 0x00: upper 32 bits of time
+  volatile uint32_t TIMELW; // 0x04: lower 32 bits of time
+
+  volatile uint32_t TIMEHR; // 0x08: upper 32 bits (latched read)
+  volatile uint32_t TIMELR; // 0x0C: lower 32 bits (latched read)
+
+  volatile uint32_t ALARM[4]; // 0x10–0x1C: alarms 0–3
+
+  volatile uint32_t ARMED; // 0x20: which alarms are armed
+
+  volatile uint32_t TIMERAWH; // 0x24: write high (set time)
+  volatile uint32_t TIMERAWL; // 0x28: write low
+
+  volatile uint32_t DBGPAUSE; // 0x2C: pause in debug
+
+  volatile uint32_t PAUSE; // 0x30: pause timer
+
+  volatile uint32_t INTR; // 0x34: raw interrupt status
+  volatile uint32_t INTE; // 0x38: interrupt enable
+  volatile uint32_t INTF; // 0x3C: interrupt force
+  volatile uint32_t INTS; // 0x40: masked interrupt status
+} timer_hw_t;
+#define TIMER ((timer_hw_t *const)timer_base)
+
+typedef struct {
+  volatile uint32_t ISER[1];
+  uint32_t RESERVED0[31];
+  volatile uint32_t ICER[1];
+  uint32_t RESERVED1[31];
+  volatile uint32_t ISPR[1];
+  uint32_t RESERVED2[31];
+  volatile uint32_t ICPR[1];
+  uint32_t RESERVED3[31];
+  volatile uint32_t IP[8];
+} nvic_type; // other MCUs with more interrupts may have multiple regs for
+             // ISER,ICER etc, hence they're arrays
+
+#define NVIC ((nvic_type *)0xE000E100UL)
+
 #endif

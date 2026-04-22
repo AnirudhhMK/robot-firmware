@@ -10,3 +10,5 @@ build/*
 *.pvs
 #cache
 .cache/*
+#compilecommands
+compile_commands.json

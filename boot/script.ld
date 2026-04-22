@@ -13,25 +13,56 @@ SECTIONS
     KEEP (*(.boot2))
     __boot2_end__ = . ;
   }>FLASH
-
-  .text : {
+  
+  .vectors : {
     KEEP (*(.vectors))
+  }
+  .text : {
     KEEP (*(.text*))
     KEEP (*(.text))
   }>FLASH
   . = ALIGN(4);
-
-  .ramcode : {
-    PROVIDE (_sramcode = .);
-    *(.data)
+  
+ .ramcode : {
     *(.ramcode)
     . = ALIGN(4);
-    PROVIDE (_eramcode = .);
   }>RAM AT>FLASH
 
-  PROVIDE (_siramcode = LOADADDR(.ramcode));
-  
   .rodata : {
     KEEP (*(.rodata))
   } > FLASH
+  . = ALIGN(4);
+  .data : {
+    *(.data)
+  }>RAM AT>FLASH
+
+  . = ALIGN(4);
+  .bss : {
+    *(.bss)
+  }>RAM
+
+  . = ALIGN(4);
+  .copy_table :{
+    __copy_table_start__ = . ;
+    LONG(LOADADDR(.data)) ;
+    LONG(ADDR(.data)) ;
+    LONG(SIZEOF(.data)/4) ;
+    
+    LONG(LOADADDR(.ramcode)) ;
+    LONG(ADDR(.ramcode)) ;
+    LONG(SIZEOF(.ramcode)/4) ;
+
+    __copy_table_end__ = . ;
+  }>FLASH
+  
+  . = ALIGN(4);
+  .zero_table :{
+    __zero_table_start__ = . ;
+    LONG(ADDR(.bss))
+    LONG(SIZEOF(.bss)/4)
+    __zero_table_end__ = . ;
+  } > FLASH
+
+ 
+
 }

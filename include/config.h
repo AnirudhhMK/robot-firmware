@@ -4,3 +4,5 @@
 #define PLL_SYS_PD2
 
 #define CLK_PERI_SRC 0
+
+#define CE 6

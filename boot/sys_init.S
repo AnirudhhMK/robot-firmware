@@ -60,9 +60,9 @@ clock_init:
   bne 1b
 //done with clk_sys clock source switch, it should now run from pll sys
 //enable clk_peri
-  ldr r0, =(clocks_base+0x60)
+  ldr r0, =(clocks_base+0x48)
   mov r1, #1
-  lsl r1, #12
+  lsl r1, #11
   str r1,[r0]
 
 //start watchdog tick at 1us (clk_ref/12)

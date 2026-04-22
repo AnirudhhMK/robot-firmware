@@ -1,9 +1,11 @@
+#include "config.h"
 #include "multicore.h"
+#include "nRF.h"
 #include "regs.h"
 
 #include <stdint.h>
 
-void entry_core1();
+void main_core1(void);
 void spi0_init();
 
 int main() {
@@ -14,21 +16,30 @@ int main() {
 
   IO_BANK0->GPIO[25].CTRL = 5;
 
+  IO_BANK0->GPIO[2].CTRL = 1;
+  IO_BANK0->GPIO[3].CTRL = 1;
+  IO_BANK0->GPIO[4].CTRL = 1;
+  IO_BANK0->GPIO[5].CTRL = 1;
+
   SIO->GPIO_OE_SET = (1 << 25);
+  // spi0_init();
+
+  SIO->GPIO_OE_SET = (1 << CE);
+  // radio_pwr_up();
+  for (uint32_t i = 25 * 1000 * 1.5; i > 0; i--) {
+    asm volatile("" ::: "memory");
+  }
+  RESETS_CLR->RESET = (1 << 21);
+  while (!(RESETS->RESET_DONE & (1 << 21)))
+    ;
   launch_core1();
+
   for (;;) {
     while (!(SIO->FIFO_ST & 1))
       ;
     if (SIO->FIFO_RD == 1234) {
       SIO->GPIO_OUT_XOR = (1 << 25);
-    }
-  }
-}
-__attribute__((section(".ramcode"))) void entry_core1() {
-  for (;;) {
-    SIO->FIFO_WR = 1234;
-    for (uint32_t i = 25 * 1000 * 1000; i > 0; i--) {
-      asm volatile("" ::: "memory");
+      // radio_standby1();
     }
   }
 }
