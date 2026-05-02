@@ -12,6 +12,7 @@ SECTIONS
     __boot2_start__ = . ;
     KEEP (*(.boot2))
     __boot2_end__ = . ;
+    . = ALIGN(4);
   }>FLASH
   
   .vectors : {
@@ -20,17 +21,20 @@ SECTIONS
   .text : {
     KEEP (*(.text*))
     KEEP (*(.text))
+    . = ALIGN(4);
   }>FLASH
-  . = ALIGN(4);
   
- .ramcode : {
+  .ramcode : {
+    . = ALIGN(4);
     *(.ramcode)
     . = ALIGN(4);
-  }>RAM AT>FLASH
+  }>RAM AT> FLASH
 
   .rodata : {
     KEEP (*(.rodata))
+    . = ALIGN(4);
   } > FLASH
+  
   . = ALIGN(4);
   .data : {
     *(.data)
@@ -47,10 +51,12 @@ SECTIONS
     LONG(LOADADDR(.data)) ;
     LONG(ADDR(.data)) ;
     LONG(SIZEOF(.data)/4) ;
-    
+    ASSERT((LOADADDR(.data) % 4) == 0, "LMA misaligned");    
+
     LONG(LOADADDR(.ramcode)) ;
     LONG(ADDR(.ramcode)) ;
     LONG(SIZEOF(.ramcode)/4) ;
+    ASSERT((LOADADDR(.ramcode) % 4) == 0, "LMA misaligned");    
 
     __copy_table_end__ = . ;
   }>FLASH

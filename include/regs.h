@@ -27,6 +27,8 @@
 #define spi0_base 0x4003C000
 #define spi1_base 0x40040000
 
+#define systick_base 0xe000e010
+
 #define hw_xor 0x1000
 #define hw_set 0x2000
 #define hw_clr 0x3000
@@ -206,6 +208,15 @@ typedef struct {
 } nvic_type; // other MCUs with more interrupts may have multiple regs for
              // ISER,ICER etc, hence they're arrays
 
-#define NVIC ((nvic_type *)0xE000E100UL)
+#define NVIC ((nvic_type *)0xe000e100)
+
+typedef struct {
+  volatile uint32_t CSR;   // 0x00 Control and Status Register
+  volatile uint32_t RVR;   // 0x04 Reload Value Register
+  volatile uint32_t CVR;   // 0x08 Current Value Register
+  volatile uint32_t CALIB; // 0x0C Calibration Register
+} systick_t;
+
+#define SYSTICK ((systick_t *)systick_base)
 
 #endif

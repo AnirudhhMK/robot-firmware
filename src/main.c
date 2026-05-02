@@ -1,6 +1,6 @@
 #include "config.h"
 #include "multicore.h"
-#include "nRF.h"
+// #include "nRF.h"
 #include "regs.h"
 
 #include <stdint.h>
@@ -22,13 +22,10 @@ int main() {
   IO_BANK0->GPIO[5].CTRL = 1;
 
   SIO->GPIO_OE_SET = (1 << 25);
-  // spi0_init();
+  spi0_init();
 
   SIO->GPIO_OE_SET = (1 << CE);
   // radio_pwr_up();
-  for (uint32_t i = 25 * 1000 * 1.5; i > 0; i--) {
-    asm volatile("" ::: "memory");
-  }
   RESETS_CLR->RESET = (1 << 21);
   while (!(RESETS->RESET_DONE & (1 << 21)))
     ;

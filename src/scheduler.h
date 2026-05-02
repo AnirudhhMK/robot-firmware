@@ -7,3 +7,5 @@ struct Task {
   volatile uint32_t next_time;
   void (*next)(Task *t);
 };
+
+void schedule_timed_task(Task *t);
