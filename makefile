@@ -17,6 +17,7 @@ build/%.o : %.S
 
 
 bin/main.elf:$(OBJ) boot/script.ld makefile
+	@mkdir -p $(dir $@)
 	arm-none-eabi-ld $(LFLAGS) -T boot/script.ld $(OBJ) -o bin/main.elf
 
 bin/main.uf2:bin/main.elf
