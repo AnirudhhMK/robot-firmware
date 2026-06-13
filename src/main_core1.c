@@ -2,27 +2,29 @@
 #include "math.h"
 #include "regs.h"
 #include "scheduler.h"
+#include "tasks.h"
+#include "uart_comms.h"
 #include <stdint.h>
 
-#define QUEUE_SIZE 2
+#define QUEUE_SIZE 3
 
 uint32_t y = 1;
-void schedule_timed_task(Task *t);
 
 void send_code(Task *t);
 void send_code1(Task *t);
 __attribute__((section(".ramcode"))) void computesqrt(Task *t);
-Task tasklist[QUEUE_SIZE] = {};
-Task code = {1, 1, 0, &send_code};
-Task tsqrt = {1, 1, 0, &computesqrt};
+
+Task tasklist[QUEUE_SIZE] = {{1, 1, 0, &send_code},
+                             {1, 1, 0, &telemetry_debug},
+                             {1, 1, 0, &process_commands_task}};
 
 __attribute__((section(".ramcode"))) void main_core1(void) {
+  NVIC->ISER[0] = (1 << 0) | // enable timer_irq_0 (alarm0)
+                  (1 << 11); // enable dma_irq_0
+  init_uart_comms();
   SYSTICK->RVR = (1 << 24) - 1;
   SYSTICK->CSR =
       (1 << 0) | (1 << 2); // enable systick and clck source is processor clock
-  tasklist[0] = code;
-  tasklist[1] = tsqrt;
-  NVIC->ISER[0] = 1 << 0; // enable timer_irq_0 (alarm0)
   TIMER->INTE = (1 << 0);
   for (;;) {
     for (uint8_t i = 0; i < QUEUE_SIZE; i++) {
@@ -32,39 +34,12 @@ __attribute__((section(".ramcode"))) void main_core1(void) {
     }
   }
 }
-__attribute__((section(".ramcode"))) void computesqrt(Task *t) {
-  static q16_16_t num = 1;
-  q16_16_t x = inv_sqrt(90);
-  SYSTICK->CVR = 0;
-  x = inv_sqrt(num);
-  uint32_t tdiff = SYSTICK->CVR;
-  tdiff = (1 << 24) - 1 - tdiff;
 
-  SYSTICK->CVR = 0;
-  uint32_t ndiff = SYSTICK->CVR;
-  ndiff = (1 << 24) - 1 - ndiff;
-
-  y = tdiff - ndiff;
-  SPI0->SSPDR = num >> 16;
-  SPI0->SSPDR = num >> 8;
-  SPI0->SSPDR = num >> 0;
-  x = ((x >> 8) * ((x >> 8) * (num >> 8)) >> 8);
-  SPI0->SSPDR = x >> 24;
-  SPI0->SSPDR = x >> 16;
-  SPI0->SSPDR = x >> 8;
-  SPI0->SSPDR = x >> 0;
-  SPI0->SSPDR = tdiff - ndiff;
-  num += 30;
-  num |= (1 << 23) - 1;
-  // t->next_time = TIMER->TIMERAWL + 1000 * 10000;
-  t->ready = 0;
-  // schedule_timed_task(t);
-}
 void send_code(Task *t) {
   if (y & 1) {
     SIO->FIFO_WR = 1234;
   }
-  y = y >> 1;
+  // y = y >> 1;
   t->next_time = TIMER->TIMERAWL + 1000 * 1000;
   t->next = send_code;
   // t->next remains the same
@@ -97,7 +72,7 @@ void schedule_timed_task(Task *t) {
   return;
 }
 
-void __attribute__((interrupt, section(".ramcode"))) _TIMER_IRQ_0(void) {
+void __attribute__((interrupt, section(".ramcode"))) TIMER_IRQ_0(void) {
   uint32_t cur_time = TIMER->TIMERAWL;
   TIMER->INTR = 1 << 0;
   uint32_t nexttime = TIMER->ALARM[0] - 1;
@@ -113,4 +88,16 @@ void __attribute__((interrupt, section(".ramcode"))) _TIMER_IRQ_0(void) {
     }
   }
   TIMER->ALARM[0] = nexttime;
+}
+
+void __attribute__((interrupt)) DMA_IRQ_0(void) {
+  uint32_t status = DMA->INTS0;
+  if (status & (1 << 0)) {
+    DMA->INTS0 = 1 << 0;
+    uart_tx_DMA_handler();
+  }
+  if (status & (1 << 1)) {
+    DMA->INTS0 = 1 << 1;
+    uart_rx_DMA_handler();
+  }
 }

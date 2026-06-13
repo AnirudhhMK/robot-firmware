@@ -9,10 +9,21 @@ void main_core1(void);
 void spi0_init();
 
 int main() {
-  // pull IOBANK0 out of reset
-  RESETS_CLR->RESET = 1 << 5;
-  while (!(RESETS->RESET_DONE & (1 << 5)))
+  // pull all peripherals out of reset
+  uint32_t reset_mask = (1 << 1) |  // busctrl
+                        (1 << 2) |  // DMA
+                        (1 << 3) |  // I2C0
+                        (1 << 5) |  // IOBank0
+                        (1 << 14) | // PWM
+                        (1 << 16) | // SPI0
+                        (1 << 21) | // timer
+                        (1 << 22);  // UART0
+
+  RESETS_CLR->RESET = reset_mask;
+  while (!(RESETS->RESET_DONE & reset_mask))
     ;
+
+  // we can give core0 priority in busctrl
 
   IO_BANK0->GPIO[25].CTRL = 5;
 
@@ -22,13 +33,10 @@ int main() {
   IO_BANK0->GPIO[5].CTRL = 1;
 
   SIO->GPIO_OE_SET = (1 << 25);
-  spi0_init();
+  //  spi0_init();
 
   SIO->GPIO_OE_SET = (1 << CE);
   // radio_pwr_up();
-  RESETS_CLR->RESET = (1 << 21);
-  while (!(RESETS->RESET_DONE & (1 << 21)))
-    ;
   launch_core1();
 
   for (;;) {
@@ -41,10 +49,6 @@ int main() {
   }
 }
 void spi0_init() {
-  // pull out of reset
-  RESETS_CLR->RESET = (1 << 16); // SPI0
-  while (!(RESETS->RESET_DONE & (1 << 16)))
-    ;
   SPI0->SSPCPSR = 50; // cpsdvsr
   SPI0->SSPCR0 =
       (7 | (0 << 6) | (1 << 8)); //  8-bit data size, Motorala mode 0,scr=1

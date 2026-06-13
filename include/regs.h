@@ -29,6 +29,11 @@
 
 #define systick_base 0xe000e010
 
+#define dma_base 0x50000000u
+
+#define uart0_base 0x40034000u
+#define uart1_base 0x40038000u
+
 #define hw_xor 0x1000
 #define hw_set 0x2000
 #define hw_clr 0x3000
@@ -218,5 +223,88 @@ typedef struct {
 } systick_t;
 
 #define SYSTICK ((systick_t *)systick_base)
+
+typedef struct {
+  volatile uint32_t READ_ADDR;   // 0x000
+  volatile uint32_t WRITE_ADDR;  // 0x004
+  volatile uint32_t TRANS_COUNT; // 0x008
+  volatile uint32_t CTRL_TRIG;   // 0x00C
+
+  volatile uint32_t AL1_CTRL;             // 0x010
+  volatile uint32_t AL1_READ_ADDR;        // 0x014
+  volatile uint32_t AL1_WRITE_ADDR;       // 0x018
+  volatile uint32_t AL1_TRANS_COUNT_TRIG; // 0x01C
+
+  volatile uint32_t AL2_CTRL;            // 0x020
+  volatile uint32_t AL2_TRANS_COUNT;     // 0x024
+  volatile uint32_t AL2_READ_ADDR;       // 0x028
+  volatile uint32_t AL2_WRITE_ADDR_TRIG; // 0x02C
+
+  volatile uint32_t AL3_CTRL;           // 0x030
+  volatile uint32_t AL3_WRITE_ADDR;     // 0x034
+  volatile uint32_t AL3_TRANS_COUNT;    // 0x038
+  volatile uint32_t AL3_READ_ADDR_TRIG; // 0x03C
+} dma_channel_t;
+
+typedef struct {
+  dma_channel_t CH[12]; // 0x000 - 0x2FF
+
+  uint32_t RESERVED0[64]; // 0x300 - 0x3FF
+
+  volatile uint32_t INTR; // 0x400
+
+  volatile uint32_t INTE0; // 0x404
+  volatile uint32_t INTF0; // 0x408
+  volatile uint32_t INTS0; // 0x40C
+
+  uint32_t RESERVED1; // 0x410
+
+  volatile uint32_t INTE1; // 0x414
+  volatile uint32_t INTF1; // 0x418
+  volatile uint32_t INTS1; // 0x41C
+
+  volatile uint32_t DMA_TIMER[4]; // 0x420 - 0x42C
+
+  volatile uint32_t MULTI_CHAN_TRIGGER; // 0x430
+
+  volatile uint32_t SNIFF_CTRL; // 0x434
+  volatile uint32_t SNIFF_DATA; // 0x438
+
+  uint32_t RESERVED2; // 0x43C
+
+  volatile uint32_t FIFO_LEVELS; // 0x440
+
+  volatile uint32_t CHAN_ABORT; // 0x444
+
+  /* Debug registers follow */
+} dma_t;
+
+#define DMA ((dma_t *const)dma_base)
+
+typedef struct {
+  volatile uint32_t UARTDR;  // 0x000 Data Register
+  volatile uint32_t UARTRSR; // 0x004 Receive Status / Error Clear
+
+  volatile uint32_t RESERVED0[4];
+
+  volatile uint32_t UARTFR; // 0x018 Flag Register
+
+  volatile uint32_t RESERVED1;
+
+  volatile uint32_t UARTILPR;  // 0x020 IrDA Low-Power Counter
+  volatile uint32_t UARTIBRD;  // 0x024 Integer Baud Rate Divisor
+  volatile uint32_t UARTFBRD;  // 0x028 Fractional Baud Rate Divisor
+  volatile uint32_t UARTLCR_H; // 0x02C Line Control Register
+  volatile uint32_t UARTCR;    // 0x030 Control Register
+  volatile uint32_t UARTIFLS;  // 0x034 Interrupt FIFO Level Select
+  volatile uint32_t UARTIMSC;  // 0x038 Interrupt Mask Set/Clear
+  volatile uint32_t UARTRIS;   // 0x03C Raw Interrupt Status
+  volatile uint32_t UARTMIS;   // 0x040 Masked Interrupt Status
+  volatile uint32_t UARTICR;   // 0x044 Interrupt Clear Register
+  volatile uint32_t UARTDMACR; // 0x048 DMA Control Register
+} uart_hw_t;
+
+#define UART0 ((uart_hw_t *const)uart0_base)
+#define UART1 ((uart_hw_t *const)uart1_base)
 
 #endif

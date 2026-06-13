@@ -31,13 +31,15 @@ SECTIONS
   }>RAM AT> FLASH
 
   .rodata : {
-    KEEP (*(.rodata))
+    KEEP (*(.rodata*))
     . = ALIGN(4);
   } > FLASH
   
   . = ALIGN(4);
   .data : {
+  . = ALIGN(4);
     *(.data)
+  . = ALIGN(4);
   }>RAM AT>FLASH
 
   . = ALIGN(4);
@@ -51,12 +53,12 @@ SECTIONS
     LONG(LOADADDR(.data)) ;
     LONG(ADDR(.data)) ;
     LONG(SIZEOF(.data)/4) ;
-    ASSERT((LOADADDR(.data) % 4) == 0, "LMA misaligned");    
+    ASSERT((LOADADDR(.data) % 4) == 0, "data LMA misaligned");    
 
     LONG(LOADADDR(.ramcode)) ;
     LONG(ADDR(.ramcode)) ;
     LONG(SIZEOF(.ramcode)/4) ;
-    ASSERT((LOADADDR(.ramcode) % 4) == 0, "LMA misaligned");    
+    ASSERT((LOADADDR(.ramcode) % 4) == 0, "ramcode LMA misaligned");    
 
     __copy_table_end__ = . ;
   }>FLASH

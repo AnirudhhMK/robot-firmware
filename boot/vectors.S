@@ -19,7 +19,7 @@
 .word	0x100001c1	//isr_invalid; Reserved, should never fire
 .word	0x100001c9	//isr_pendsv
 .word	0x100001cb	//isr_systick
-.word	_TIMER_IRQ_0//interrupt_0
+.word	0x100001cb	//interrupt_0
 .word	0x100001cd	//interrupt_1
 .word	0x100001cd	//interrupt_2
 .word	0x100001cd	//interrupt_3
@@ -52,7 +52,7 @@
 .word	0x100001cd	//interrupt_30
 .word	0x100001cd	//interrupt_31
 
-
+.align(8)
 .global _core1vectorTable
 _core1vectorTable:
 .word	0x20041000	//start of stack pointer
@@ -71,7 +71,7 @@ _core1vectorTable:
 .word	0x100001c1	//isr_invalid; Reserved, should never fire
 .word	0x100001c9	//isr_pendsv
 .word	0x100001cb	//isr_systick
-.word	_TIMER_IRQ_0//interrupt_0
+.word	TIMER_IRQ_0//interrupt_0
 .word	0x100001cd	//interrupt_1
 .word	0x100001cd	//interrupt_2
 .word	0x100001cd	//interrupt_3
@@ -82,7 +82,7 @@ _core1vectorTable:
 .word	0x100001cd	//interrupt_8
 .word	0x100001cd	//interrupt_9
 .word	0x100001cd	//interrupt_10
-.word	0x100001cd	//interrupt_11
+.word	DMA_IRQ_0   //interrupt_11
 .word	0x100001cd	//interrupt_12
 .word	0x100001cd	//interrupt_13
 .word	0x100001cd	//interrupt_14
@@ -104,8 +104,8 @@ _core1vectorTable:
 .word	0x100001cd	//interrupt_30
 .word	0x100001cd	//interrupt_31
 
-.weak _TIMER_IRQ_0
-.set _TIMER_IRQ_0, __badisr__
+.weak TIMER_IRQ_0
+.set TIMER_IRQ_0, __badisr__
 
 .weak _PIO0_IRQ_0
 .set _PIO0_IRQ_0, __badisr__
