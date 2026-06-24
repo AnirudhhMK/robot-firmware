@@ -1,7 +1,7 @@
 CFLAGS = -mcpu=cortex-m0plus -mthumb -O3 -Iinclude 
 LFLAGS := 
 
-SRC_C := $(wildcard src/*.c lib/*.c boot/*.c) 
+SRC_C := $(wildcard src/*.c lib/*.c boot/*.c src/core0/*.c src/core1/*.c) 
 SRC_S := $(wildcard boot/*.S lib/*.S)
 OBJ := $(SRC_C:%.c=build/%.o) $(SRC_S:%.S=build/%.o)
 PICOTOOL := ../picotool/picotool

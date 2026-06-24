@@ -4,7 +4,7 @@
 #define ONE_q16_16 (1 << 16)
 typedef int32_t q16_16_t;
 
-static inline q16_16_t mulq16_16(q16_16_t x, q16_16_t y) { // untested
+q16_16_t mulq16_16(q16_16_t x, q16_16_t y) { // untested
   int32_t y1 = y >> 16;
   int32_t x1 = x >> 16;
   int32_t x0 = (int16_t)x;

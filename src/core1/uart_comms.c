@@ -64,7 +64,8 @@ void init_uart_comms(void) {
   DMA->CH[1].AL1_WRITE_ADDR = (uint32_t)uart_rx_queue->data;
   DMA->CH[1].AL1_READ_ADDR = (uint32_t)&UART0->UARTDR;
   DMA->CH[1].AL1_TRANS_COUNT_TRIG = ((1ull << 32) - 1);
-  *(&DMA->INTE0 + hw_set) = (1 << 0);
+  ACCESS_OFFSET(DMA->INTE0, hw_set) =
+      (1 << 0) | (1 << 1); // enable interrupts for channel 0 and channel 1
 }
 
 void inline uart_tx_kick(void) {

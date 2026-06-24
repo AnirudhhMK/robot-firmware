@@ -7,7 +7,7 @@ void process_commands_task(Task *t) {
   while (uart_rx_get(&pack) == 0) {
     switch (pack.command) {
     case CMD_DEBUG:
-      SIO->GPIO_OUT_XOR = (1 << 25);
+      // SIO->GPIO_OUT_XOR = (1 << 25);
       break;
     default:
       break;

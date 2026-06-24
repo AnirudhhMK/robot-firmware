@@ -4,7 +4,27 @@
 #include <stdio.h>
 int test_arctan2();
 int test_invsqrt();
-int main() { test_arctan2(); }
+int test_mulq16_16();
+int test_mulu32_u32();
+typedef int32_t q16_16_t;
+
+q16_16_t mulq16_16(q16_16_t x, q16_16_t y) { // untested
+  int32_t y1 = y >> 16;
+  int32_t x1 = x >> 16;
+  int32_t x0 = (int16_t)x;
+  int32_t y0 = (int16_t)y;
+  return x * y1 + (x0 * y0 >> 16) + x1 * y0;
+}
+
+int main() { test_mulq16_16(); }
+
+int test_mulq16_16() {
+  int m = -29393;
+  q16_16_t a = m * (1 << 16);
+  q16_16_t b = 500;
+  printf("%f : %f\n", (float)mulq16_16(a, b) / (1 << 16), (float)m / 131);
+}
+
 int test_arctan2() {
   float max = 0;
   for (uint32_t i = 0; i < 360; i++) {

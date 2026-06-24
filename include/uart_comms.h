@@ -31,15 +31,14 @@ typedef struct __attribute__((packed)) {
 } sensor_payload_t;
 
 typedef struct __attribute__((packed)) {
-  int16_t p;
-  int16_t i;
-  int16_t d;
-} debug_payload_t;
+  int16_t pwm_l;
+  int16_t pwm_r;
+} telemetry_fast_payload_t;
 
 enum {
   PID_CONTROL = 1,
   PID_SENSOR_DATA = 2,
-  PID_DEBUG = 3,
+  PID_FAST = 3,
   PID_MSG = 4,
 };
 

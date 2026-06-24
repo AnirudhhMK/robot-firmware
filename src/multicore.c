@@ -1,3 +1,4 @@
+#include "multicore.h"
 #include "regs.h"
 #include <stdint.h>
 
@@ -30,3 +31,5 @@ void launch_core1() {
 
   } while (seq < 6);
 }
+
+pwm_data_dbuf_t pwm_data_dbuf;

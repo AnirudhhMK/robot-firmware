@@ -6,16 +6,16 @@
 #include "uart_comms.h"
 #include <stdint.h>
 
-#define QUEUE_SIZE 3
+#define QUEUE_SIZE 4
 
 uint32_t y = 1;
 
 void send_code(Task *t);
-void send_code1(Task *t);
 __attribute__((section(".ramcode"))) void computesqrt(Task *t);
 
 Task tasklist[QUEUE_SIZE] = {{1, 1, 0, &send_code},
                              {1, 1, 0, &telemetry_debug},
+                             {1, 1, 0, &telemetry_fast},
                              {1, 1, 0, &process_commands_task}};
 
 __attribute__((section(".ramcode"))) void main_core1(void) {
@@ -36,20 +36,8 @@ __attribute__((section(".ramcode"))) void main_core1(void) {
 }
 
 void send_code(Task *t) {
-  if (y & 1) {
-    SIO->FIFO_WR = 1234;
-  }
-  // y = y >> 1;
   t->next_time = TIMER->TIMERAWL + 1000 * 1000;
   t->next = send_code;
-  // t->next remains the same
-  schedule_timed_task(t);
-}
-void send_code1(Task *t) {
-  SIO->FIFO_WR = 1234;
-  t->next_time = TIMER->TIMERAWL + 1000 * 1000 / 4;
-  t->next = send_code;
-  //  t->next remains the same
   schedule_timed_task(t);
 }
 
