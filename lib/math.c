@@ -11,6 +11,41 @@ q16_16_t mulq16_16(q16_16_t x, q16_16_t y) { // untested
   int32_t y0 = (int16_t)y;
   return x * y1 + (x0 * y0 >> 16) + x1 * y0;
 }
+
+q16_16_t thetaTable[16] = {2949120, 1740967, 919879, 466945, 234378, 117303,
+                           58666,   29334,   14667,  7333,   3666,   1833,
+                           916,     458,     229,    114};
+__attribute__((section(".ramcode"))) q16_16_t
+arctan(q16_16_t y,
+       q16_16_t x) { // gives result in degrees, using standard CORDIC algorithm
+  q16_16_t theta = 0;
+  uint8_t m = 0;
+  if (x < 0) {
+    x = -x;
+    y = -y;
+    theta += y < 0 ? 180 * (1 << 16) : -180 * (1 << 16);
+  }
+  if (x >= (1 << 29)) { // ensure that even in worse case there can be no
+                        // overflow in x, as x will increase
+    x >>= 2;
+    y >>= 2;
+  }
+  for (uint8_t p = 0; p < 16; p++) {
+    if (y > 0) {
+      q16_16_t temp = y - (x >> p);
+      x = x + (y >> p);
+      y = temp;
+      theta += thetaTable[p];
+    } else {
+      q16_16_t temp = y + (x >> p);
+      x = x - (y >> p);
+      y = temp;
+      theta -= thetaTable[p];
+    }
+  }
+  return theta;
+}
+
 uint8_t LUT[64] = {128, 127, 126, 125, 124, 123, 122, 122, 121, 120, 119,
                    118, 117, 117, 116, 115, 114, 114, 113, 112, 112, 111,
                    110, 110, 109, 109, 108, 107, 107, 106, 106, 105, 105,

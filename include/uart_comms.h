@@ -1,3 +1,4 @@
+#include "multicore.h"
 #include <stdint.h>
 
 typedef struct __attribute__((packed)) {
@@ -31,8 +32,9 @@ typedef struct __attribute__((packed)) {
 } sensor_payload_t;
 
 typedef struct __attribute__((packed)) {
-  int16_t pwm_l;
-  int16_t pwm_r;
+  q16_16_t theta_a;
+  q16_16_t theta_g;
+  q16_16_t theta;
 } telemetry_fast_payload_t;
 
 enum {

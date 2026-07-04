@@ -1,4 +1,5 @@
 #pragma once
+#include "math.h"
 #include <stdint.h>
 void launch_core1();
 
@@ -12,3 +13,15 @@ typedef struct {
   volatile uint8_t writer;
 } pwm_data_dbuf_t;
 extern pwm_data_dbuf_t pwm_data_dbuf;
+
+typedef struct {
+  q16_16_t theta_a;
+  q16_16_t theta_g;
+  q16_16_t theta;
+} angle_estimate;
+
+typedef struct {
+  angle_estimate buf[2];
+  volatile uint8_t writer;
+} angle_estimate_dbuf_t;
+extern angle_estimate_dbuf_t angle_estimate_dbuf;

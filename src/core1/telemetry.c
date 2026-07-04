@@ -31,8 +31,10 @@ void telemetry_fast(Task *t) {
 
   packet.header = (packet_header_t){
       0x55aa, PID_FAST, sizeof(telemetry_fast_payload_t), TIMER->TIMERAWL};
-  pwm_data pwm = pwm_data_dbuf.buf[pwm_data_dbuf.writer ^ 1];
-  packet.payload = (telemetry_fast_payload_t){pwm.pwm_l, pwm.pwm_r};
+  angle_estimate angle =
+      angle_estimate_dbuf.buf[angle_estimate_dbuf.writer ^ 1];
+  packet.payload =
+      (telemetry_fast_payload_t){angle.theta_a, angle.theta_g, angle.theta};
   uart_tx_send((uint8_t *)&packet, sizeof(packet));
 
   t->next_time = TIMER->TIMERAWL + 1000 * 10;

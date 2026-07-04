@@ -9,6 +9,6 @@ build/*
 *.ln
 *.pvs
 #cache
-.cache/*
+*.cache
 #compilecommands
 compile_commands.json

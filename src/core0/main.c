@@ -2,6 +2,8 @@
 #include "multicore.h"
 // #include "nRF.h"
 #include "config.h"
+#include "i2c_imu.h"
+#include "math.h"
 #include "regs.h"
 #include <stdint.h>
 
@@ -41,21 +43,27 @@ int main() {
                      (1 << RMOTOR_OUT_B_IO) | (1 << LMOTOR_OUT_F_IO) |
                      (1 << LMOTOR_OUT_B_IO);
   launch_core1();
-  pwm_motor_init();
-  int16_t avg = 0;
-  uint32_t time = TIMER->TIMERAWL;
-  uint8_t s = 1;
+  imu_readings imu_data_raw;
+  q16_16_t theta_g = 0, theta_a = 0, theta = 0;
+  q16_16_t dtheta;
+  init_i2c_imu();
+
+  uint64_t magic = 275028984878; // dt/131 * (2^55)
+                                 // dt = 1/1000
+  SIO->GPIO_OUT_XOR = (1 << DEBUG_LED_IO);
   while (1) {
-    while (TIMER->TIMERAWL - time < 500)
-      ;
-    time += 500;
-    movement_control(avg, 0);
-    if (s)
-      avg += 1;
-    else
-      avg -= 1;
-    if (avg > 5000 || avg < -5000)
-      s ^= 1;
+    if (read_imu(&imu_data_raw) == IMU_OK) {
+      SIO->GPIO_OUT_XOR = (1 << DEBUG_LED_IO);
+      dtheta = ((int64_t)magic * (int64_t)imu_data_raw.gyro_y) >> (55 - 16);
+      theta_g += dtheta;
+      theta_a = arctan(imu_data_raw.gyro_z, imu_data_raw.gyro_x);
+      angle_estimate_dbuf.buf[angle_estimate_dbuf.writer] =
+          (angle_estimate){theta_a, theta_g, theta};
+      angle_estimate_dbuf.writer ^= 1;
+      uint32_t time = TIMER->TIMERAWL;
+      while (TIMER->TIMERAWL - time < 1000)
+        ;
+    }
   }
 }
 
@@ -68,7 +76,7 @@ void pwm_motor_init(void) {
 void movement_control(int16_t avg, int16_t turn) {
   int32_t rmotor = avg - turn;
   int32_t lmotor = avg + turn;
-  int32_t clip = 5001;
+  int32_t clip = PWM->CH[MOTOR_PWM_SLICE].TOP + 1;
   if (rmotor > 0) {
     SIO->GPIO_OUT_SET = (1 << RMOTOR_OUT_F_IO);
     SIO->GPIO_OUT_CLR = (1 << RMOTOR_OUT_B_IO);

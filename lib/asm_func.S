@@ -31,7 +31,7 @@ FUNCTION _clz //r0 is the num
   bx lr
 ENDFUNC _clz
 
-FUNCTION __aeabi_lmu
+FUNCTION __aeabi_lmul
 	push	{r4, lr}
 	mul	r1, r2
 	mul	r3, r0
@@ -61,4 +61,4 @@ FUNCTION __aeabi_lmu
 	adc	r1, r3
 	pop	{r4, pc}
 
-ENDFUNC __aeabi_lmu
+ENDFUNC __aeabi_lmul
