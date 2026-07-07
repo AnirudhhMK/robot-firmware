@@ -1,5 +1,6 @@
 #pragma once
 #include "math.h"
+#include "uart_comms.h"
 #include <stdint.h>
 void launch_core1();
 
@@ -25,3 +26,9 @@ typedef struct {
   volatile uint8_t writer;
 } angle_estimate_dbuf_t;
 extern angle_estimate_dbuf_t angle_estimate_dbuf;
+
+typedef struct {
+  imu_payload_t buf[2];
+  volatile uint8_t writer;
+} imu_payload_dbuf_t;
+extern imu_payload_dbuf_t imu_payload_dbuf;

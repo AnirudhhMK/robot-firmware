@@ -1,4 +1,6 @@
-#include "multicore.h"
+#pragma once
+#include "i2c_imu.h"
+#include "math.h"
 #include <stdint.h>
 
 typedef struct __attribute__((packed)) {
@@ -21,25 +23,18 @@ typedef struct __attribute__((packed)) {
   int16_t pid_output;
 } control_payload_t;
 
-typedef struct __attribute__((packed)) {
-  int16_t gyro_x;
-  int16_t gyro_y;
-  int16_t gyro_z;
-
-  int16_t accel_x;
-  int16_t accel_y;
-  int16_t accel_z;
-} sensor_payload_t;
+typedef imu_readings imu_payload_t;
 
 typedef struct __attribute__((packed)) {
   q16_16_t theta_a;
   q16_16_t theta_g;
   q16_16_t theta;
+
 } telemetry_fast_payload_t;
 
 enum {
   PID_CONTROL = 1,
-  PID_SENSOR_DATA = 2,
+  PID_IMU_DATA = 2,
   PID_FAST = 3,
   PID_MSG = 4,
 };

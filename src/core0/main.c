@@ -39,31 +39,37 @@ int main() {
   IO_BANK0->GPIO[RMOTOR_OUT_PWM_IO].CTRL = 4; // PWM
   IO_BANK0->GPIO[LMOTOR_OUT_PWM_IO].CTRL = 4;
 
+  IO_BANK0->GPIO[I2C0_SCL_IO].CTRL = 3;
+  IO_BANK0->GPIO[I2C0_SDA_IO].CTRL = 3;
+
   SIO->GPIO_OE_SET = (1 << DEBUG_LED_IO) | (1 << RMOTOR_OUT_F_IO) |
                      (1 << RMOTOR_OUT_B_IO) | (1 << LMOTOR_OUT_F_IO) |
                      (1 << LMOTOR_OUT_B_IO);
   launch_core1();
-  imu_readings imu_data_raw;
+
   q16_16_t theta_g = 0, theta_a = 0, theta = 0;
   q16_16_t dtheta;
+
   init_i2c_imu();
 
   uint64_t magic = 275028984878; // dt/131 * (2^55)
                                  // dt = 1/1000
-  SIO->GPIO_OUT_XOR = (1 << DEBUG_LED_IO);
   while (1) {
-    if (read_imu(&imu_data_raw) == IMU_OK) {
+    imu_readings imu_data = imu_payload_dbuf.buf[imu_payload_dbuf.writer];
+    if (read_imu(&imu_data) == IMU_OK) {
+      imu_payload_dbuf.writer ^= 1;
       SIO->GPIO_OUT_XOR = (1 << DEBUG_LED_IO);
-      dtheta = ((int64_t)magic * (int64_t)imu_data_raw.gyro_y) >> (55 - 16);
+      dtheta = ((int64_t)magic * (int64_t)imu_data.gyro_y) >> (55 - 16);
       theta_g += dtheta;
-      theta_a = arctan(imu_data_raw.gyro_z, imu_data_raw.gyro_x);
+      theta_a = arctan(imu_data.gyro_z, imu_data.gyro_x);
       angle_estimate_dbuf.buf[angle_estimate_dbuf.writer] =
           (angle_estimate){theta_a, theta_g, theta};
       angle_estimate_dbuf.writer ^= 1;
       uint32_t time = TIMER->TIMERAWL;
-      while (TIMER->TIMERAWL - time < 1000)
-        ;
     }
+    uint32_t time = TIMER->TIMERAWL;
+    while (TIMER->TIMERAWL - time < 1000)
+      ;
   }
 }
 

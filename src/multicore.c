@@ -34,3 +34,4 @@ void launch_core1() {
 
 pwm_data_dbuf_t pwm_data_dbuf;
 angle_estimate_dbuf_t angle_estimate_dbuf;
+imu_payload_dbuf_t imu_payload_dbuf;

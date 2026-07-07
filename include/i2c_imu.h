@@ -1,7 +1,8 @@
+#pragma once
 #include <stdint.h>
 
-typedef struct {
-  uint16_t gyro_z, gyro_y, gyro_x, temp, accel_z, accel_y, accel_x;
+typedef struct __attribute__((packed)) {
+  int16_t gyro_z, gyro_y, gyro_x, temp, accel_z, accel_y, accel_x;
 } imu_readings;
 
 enum imu_error {

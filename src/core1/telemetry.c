@@ -5,6 +5,16 @@
 #include <stddef.h>
 #include <stdint.h>
 
+void send_imu_payload(imu_payload_t *imu_data) {
+  struct __attribute__((packed)) {
+    packet_header_t header;
+    imu_payload_t payload;
+  } packet;
+  packet.header = (packet_header_t){0x55aa, PID_IMU_DATA, sizeof(imu_payload_t),
+                                    TIMER->TIMERAWL};
+  packet.payload = *imu_data;
+  uart_tx_send((uint8_t *)&packet, sizeof(packet));
+}
 void telemetry_debug(Task *t) {
 
   char msg[] = "Hello World!";
@@ -24,20 +34,8 @@ void telemetry_debug(Task *t) {
 }
 
 void telemetry_fast(Task *t) {
-  struct __attribute__((packed)) {
-    packet_header_t header;
-    telemetry_fast_payload_t payload;
-  } packet;
-
-  packet.header = (packet_header_t){
-      0x55aa, PID_FAST, sizeof(telemetry_fast_payload_t), TIMER->TIMERAWL};
-  angle_estimate angle =
-      angle_estimate_dbuf.buf[angle_estimate_dbuf.writer ^ 1];
-  packet.payload =
-      (telemetry_fast_payload_t){angle.theta_a, angle.theta_g, angle.theta};
-  uart_tx_send((uint8_t *)&packet, sizeof(packet));
-
-  t->next_time = TIMER->TIMERAWL + 1000 * 10;
+  send_imu_payload(&imu_payload_dbuf.buf[imu_payload_dbuf.writer ^ 1]);
+  t->next_time = TIMER->TIMERAWL + 1000 * 100;
   schedule_timed_task(t);
 }
 
