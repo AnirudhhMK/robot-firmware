@@ -9,6 +9,7 @@ build/*
 *.ln
 *.pvs
 #cache
+*pycache*
 *.cache
 #compilecommands
 compile_commands.json

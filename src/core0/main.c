@@ -5,6 +5,7 @@
 #include "i2c_imu.h"
 #include "math.h"
 #include "regs.h"
+#include "uart_comms.h"
 #include <stdint.h>
 
 void main_core1(void);
@@ -39,8 +40,11 @@ int main() {
   IO_BANK0->GPIO[RMOTOR_OUT_PWM_IO].CTRL = 4; // PWM
   IO_BANK0->GPIO[LMOTOR_OUT_PWM_IO].CTRL = 4;
 
-  IO_BANK0->GPIO[I2C0_SCL_IO].CTRL = 3;
+  IO_BANK0->GPIO[I2C0_SCL_IO].CTRL = 3; // I2C
   IO_BANK0->GPIO[I2C0_SDA_IO].CTRL = 3;
+
+  IO_BANK0->GPIO[UART0_TX_IO].CTRL = 2;
+  IO_BANK0->GPIO[UART0_RX_IO].CTRL = 2;
 
   SIO->GPIO_OE_SET = (1 << DEBUG_LED_IO) | (1 << RMOTOR_OUT_F_IO) |
                      (1 << RMOTOR_OUT_B_IO) | (1 << LMOTOR_OUT_F_IO) |
@@ -50,23 +54,42 @@ int main() {
   q16_16_t theta_g = 0, theta_a = 0, theta = 0;
   q16_16_t dtheta;
 
-  init_i2c_imu();
+  init_i2c();
+  while (init_imu() != IMU_OK)
+    (void)I2C0->CLR_TX_ABRT;
+  calibrate_imu();
 
+  //  SIO->GPIO_OUT_XOR = (1 << DEBUG_LED_IO);
   uint64_t magic = 275028984878; // dt/131 * (2^55)
                                  // dt = 1/1000
+  uint32_t x = 0;
+  uint8_t first_iter = 1;
   while (1) {
-    imu_readings imu_data = imu_payload_dbuf.buf[imu_payload_dbuf.writer];
-    if (read_imu(&imu_data) == IMU_OK) {
+    imu_readings *imu_data = &imu_payload_dbuf.buf[imu_payload_dbuf.writer];
+    if (read_imu(imu_data) == IMU_OK) {
+      x++;
       imu_payload_dbuf.writer ^= 1;
-      SIO->GPIO_OUT_XOR = (1 << DEBUG_LED_IO);
-      dtheta = ((int64_t)magic * (int64_t)imu_data.gyro_y) >> (55 - 16);
-      theta_g += dtheta;
-      theta_a = arctan(imu_data.gyro_z, imu_data.gyro_x);
+      if (x > 100) {
+        SIO->GPIO_OUT_XOR = (1 << DEBUG_LED_IO);
+        x = 0;
+      }
+      theta_a = arctan(imu_data->gyro_z, imu_data->gyro_x);
+      if (first_iter--)
+        theta_g = theta_a;
+      else {
+        dtheta = ((int64_t)magic * (int64_t)imu_data->gyro_y) >> (55 - 16);
+        theta_g += dtheta;
+      }
+      theta = 1311 * (theta + dtheta) +
+              64225 * theta_a; // 0.02 in q16_16_t is 1311
+                               // 0.98 in q16_16_t is 64225
       angle_estimate_dbuf.buf[angle_estimate_dbuf.writer] =
-          (angle_estimate){theta_a, theta_g, theta};
+          (angle_estimate_payload_t){theta_a, theta_g, theta};
       angle_estimate_dbuf.writer ^= 1;
       uint32_t time = TIMER->TIMERAWL;
     }
+
+    (void)I2C0->CLR_TX_ABRT;
     uint32_t time = TIMER->TIMERAWL;
     while (TIMER->TIMERAWL - time < 1000)
       ;

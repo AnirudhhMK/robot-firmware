@@ -29,13 +29,12 @@ typedef struct __attribute__((packed)) {
   q16_16_t theta_a;
   q16_16_t theta_g;
   q16_16_t theta;
-
-} telemetry_fast_payload_t;
+} angle_estimate_payload_t;
 
 enum {
   PID_CONTROL = 1,
   PID_IMU_DATA = 2,
-  PID_FAST = 3,
+  PID_ANGLE_ESTIMATE = 3,
   PID_MSG = 4,
 };
 
@@ -46,7 +45,7 @@ enum {
 void init_uart_comms(void);
 void uart_tx_kick(void);
 void uart_tx_update_reader(void);
-int32_t uart_tx_send(uint8_t *data, uint32_t size);
+int32_t uart_tx_send(packet_header_t *packet_header, uint8_t *payload);
 void uart_tx_DMA_handler(void);
 
 int32_t uart_rx_get(command_packet_t *packet);

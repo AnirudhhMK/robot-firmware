@@ -16,13 +16,7 @@ typedef struct {
 extern pwm_data_dbuf_t pwm_data_dbuf;
 
 typedef struct {
-  q16_16_t theta_a;
-  q16_16_t theta_g;
-  q16_16_t theta;
-} angle_estimate;
-
-typedef struct {
-  angle_estimate buf[2];
+  angle_estimate_payload_t buf[2];
   volatile uint8_t writer;
 } angle_estimate_dbuf_t;
 extern angle_estimate_dbuf_t angle_estimate_dbuf;

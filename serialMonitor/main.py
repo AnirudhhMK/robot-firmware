@@ -1,72 +1,51 @@
-import serial
-import struct
+import matplotlib.pyplot as plt
+import matplotlib.animation as animation
 from collections import deque
-from dataclasses import dataclass 
+import threading
+import uart_reader
+# Parameters
+x_len = 200         # Number of points to display
+y_range = [-180, 180]  # Range of possible Y values to display
 
-MAX_PAYLOAD = 256
+N = x_len
 
-PID_CONTROL = 1
-PID_IMU_DATA = 2
-PID_FAST = 3
-PID_MSG = 4
+gyro = deque([0.0] * N, maxlen=N)
+accel = deque([0.0] * N, maxlen=N)
+comp = deque([0.0] * N, maxlen=N)
+uart_reader.init_worker(gyro,accel,comp)
+# Create figure for plotting
+fig = plt.figure()
+ax = fig.add_subplot(1, 1, 1)
+xs = list(range(0, x_len))
+ys = [0] * x_len
+ax.set_ylim(y_range)
 
-def handle_msg(data,header):
-    print(data.decode("utf-8"))
+# Initialize communication with TMP102
 
-@dataclass
-class imu_payload:
-    gyro_z : int
-    gyro_y : int
-    gyro_x : int
-    temp : int
-    accel_z : int
-    accel_y : int
-    accel_x : int
-    FORMAT = "<hhhhhhh"
-    SIZE = struct.calcsize(FORMAT)
-    @classmethod
-    def from_bytes(cls,data):
-        return cls(*struct.unpack(cls.FORMAT,data))
-def handle_imu(data,header):
-    imu_data = imu_payload.from_bytes(data)
-    print(imu_data)
+# Create a blank line. We will update the line in animate
+gyro_line, = ax.plot(xs, gyro, label="Gyro")
+accel_line, = ax.plot(xs, accel, label="Accel")
+comp_line, = ax.plot(xs, comp, label="Complementary")
 
-@dataclass
-class packet_header:
-    sync : int
-    pid : int
-    length : int
-    timestamp : int
+ax.legend()
+# Add labels
+plt.title('Angle estimates over time')
+plt.xlabel('Time')
+plt.ylabel('Angle in degrees')
 
-    FORMAT = "<HHHI"
-    SIZE = struct.calcsize(FORMAT)
-    @classmethod
-    def from_bytes(cls,data):
-        return cls(*struct.unpack(cls.FORMAT,data))
+# This function is called periodically from FuncAnimation
+def animate(frame):
+    gyro_line.set_ydata(gyro)
+    accel_line.set_ydata(accel)
+    comp_line.set_ydata(comp)
+    return gyro_line, accel_line, comp_line# Set up plot to call animate() function periodically
 
-def process_telemetry(data,header):
-    handlers = {PID_MSG:handle_msg, PID_IMU_DATA:handle_imu}
-    handler = handlers.get(header.pid)
-    if handler:
-        handler(data,header)
+ani = animation.FuncAnimation(fig,
+    animate,
+    interval=50,
+    blit=True)
 
-buf = bytearray() 
+thread = threading.Thread(target=uart_reader.uart_worker,daemon=True)
+thread.start()
 
-ser = serial.Serial("/dev/ttyACM0",baudrate=115200,parity=serial.PARITY_ODD,timeout=0)
-while True:
-    buf.extend(ser.read(1024))
-    while len(buf)>=packet_header.SIZE:
-        if buf[0] == 0xaa:
-            if buf[1] == 0x55:
-                header = packet_header.from_bytes(buf[:packet_header.SIZE])
-                if header.length>MAX_PAYLOAD:
-                    del buf[:2]
-                    continue
-                if len(buf)<(header.length+header.SIZE):
-                    break #try again next iteration
-                data = buf[header.SIZE:header.length+header.SIZE]
-                process_telemetry(data,header)
-                del buf[:header.length+header.SIZE]
-                continue 
-        del buf[:1]
-
+plt.show()

@@ -28,3 +28,9 @@ int32_t Rbuf_read_bulk(ringbuf_handle_t buf, uint8_t *data, uint32_t size) {
   buf->reader = r;
   return 0;
 }
+
+int32_t Rbuf_check_availability(ringbuf_handle_t buf, uint32_t space) {
+  if ((buf->writer + space) - buf->reader > buf->mask + 1)
+    return -1;
+  return 0;
+}

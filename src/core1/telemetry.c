@@ -6,28 +6,29 @@
 #include <stdint.h>
 
 void send_imu_payload(imu_payload_t *imu_data) {
-  struct __attribute__((packed)) {
-    packet_header_t header;
-    imu_payload_t payload;
-  } packet;
-  packet.header = (packet_header_t){0x55aa, PID_IMU_DATA, sizeof(imu_payload_t),
-                                    TIMER->TIMERAWL};
-  packet.payload = *imu_data;
-  uart_tx_send((uint8_t *)&packet, sizeof(packet));
+  packet_header_t header = (packet_header_t){
+      0x55aa, PID_IMU_DATA, sizeof(imu_payload_t), TIMER->TIMERAWL};
+  uart_tx_send(&header, (uint8_t *)imu_data);
 }
-void telemetry_debug(Task *t) {
 
-  char msg[] = "Hello World!";
-  struct __attribute__((packed)) {
-    packet_header_t header;
-    char buf[sizeof(msg)];
-  } msg_pack = {{0x55aa, PID_MSG, sizeof(msg), TIMER->TIMERAWL}, 0};
-  for (uint8_t i = 0; i < sizeof(msg); i++) {
-    msg_pack.buf[i] = msg[i];
-  }
-  // uart_tx_send((uint8_t *)&msg_pack, sizeof(msg_pack));
-  command_packet_t pack = {0x55aa, CMD_DEBUG, 0};
-  uart_tx_send((uint8_t *)&pack, sizeof(command_packet_t));
+void send_angle_estimate_payload(angle_estimate_payload_t *angle) {
+  packet_header_t header =
+      (packet_header_t){0x55aa, PID_ANGLE_ESTIMATE,
+                        sizeof(angle_estimate_payload_t), TIMER->TIMERAWL};
+  uart_tx_send(&header, (uint8_t *)angle);
+}
+
+void send_msg_payload(char *msg, uint16_t len) {
+  packet_header_t header = (packet_header_t){
+      0x55aa, PID_MSG, sizeof(uint8_t) * len / sizeof(char), TIMER->TIMERAWL};
+  uart_tx_send(&header, (uint8_t *)msg);
+}
+
+void telemetry_debug(Task *t) {
+  char msg[] = "Hello World!\r\n";
+  send_msg_payload(msg, sizeof(msg));
+  // command_packet_t pack = {0x55aa, CMD_DEBUG, 0};
+  // uart_tx_send((uint8_t *)&pack, sizeof(command_packet_t));
 
   t->next_time = TIMER->TIMERAWL + 1000 * 1000;
   schedule_timed_task(t);
@@ -35,6 +36,8 @@ void telemetry_debug(Task *t) {
 
 void telemetry_fast(Task *t) {
   send_imu_payload(&imu_payload_dbuf.buf[imu_payload_dbuf.writer ^ 1]);
+  send_angle_estimate_payload(
+      &angle_estimate_dbuf.buf[angle_estimate_dbuf.writer ^ 1]);
   t->next_time = TIMER->TIMERAWL + 1000 * 100;
   schedule_timed_task(t);
 }

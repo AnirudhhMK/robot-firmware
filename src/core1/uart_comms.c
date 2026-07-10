@@ -28,7 +28,7 @@ void init_uart_comms(void) {
   UART0->UARTCR = (1 << 0) | // uart enable
                   (1 << 8) | // rx enable
                   (1 << 9) | // tx enable
-                  (1 << 7);  // LPE
+                  (0 << 7);  // no LPE
 
   UART0->UARTDMACR = (1 << 0) | // transmit dma enabled
                      (1 << 1);  // recieve dma enabled
@@ -107,12 +107,25 @@ void inline uart_rx_update_writer() {
       ((new_writer_masked - old_writer) & mask) + old_writer;
 }
 
-int32_t uart_tx_send(uint8_t *data, uint32_t size) {
+int32_t
+uart_tx_send(packet_header_t *packet_header,
+             uint8_t *payload) { // we assume that core0 is the only producer
+                                 // and that ISRs won't write to the ring buffer
+                                 // (im not disabling interrupts)
   uart_tx_update_reader();
-  int32_t res = Rbuf_write_bulk(uart_tx_queue, data, size);
+  int32_t ret = Rbuf_check_availability(
+      uart_tx_queue, sizeof(packet_header_t) + packet_header->payload_len);
+  if (ret != 0)
+    return ret;
+  Rbuf_write_bulk(uart_tx_queue, (uint8_t *)packet_header,
+                  sizeof(packet_header_t));
+
+  Rbuf_write_bulk(uart_tx_queue, (uint8_t *)payload,
+                  packet_header->payload_len);
   uart_tx_kick();
-  return res;
+  return ret;
 }
+
 int32_t uart_rx_get(command_packet_t *packet) {
   // Note: we are depending on the assumption that overflows don't happen, if it
   // does we are not handling it, and just pretending that its all okay

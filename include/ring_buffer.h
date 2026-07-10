@@ -45,3 +45,5 @@ static inline int32_t Rbuf_read(ringbuf_handle_t buf, uint8_t *data) {
 
 int32_t Rbuf_write_bulk(ringbuf_handle_t buf, uint8_t *data, uint32_t size);
 int32_t Rbuf_read_bulk(ringbuf_handle_t buf, uint8_t *data, uint32_t size);
+
+int32_t Rbuf_check_availability(ringbuf_handle_t buf, uint32_t space);
