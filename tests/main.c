@@ -16,7 +16,7 @@ q16_16_t mulq16_16(q16_16_t x, q16_16_t y) { // untested
   return x * y1 + (x0 * y0 >> 16) + x1 * y0;
 }
 
-int main() { test_mulq16_16(); }
+int main() { test_arctan2(); }
 
 int test_mulq16_16() {
   int m = -29393;
@@ -34,7 +34,7 @@ int test_arctan2() {
     q16_16_t y = yd * (1 << 16);
     q16_16_t x = xd * (1 << 16);
     double resd = (double)arctan2(y, x) / (double)(1 << 16);
-    printf("angle:%f ,resd:%f, err:%f\n", angle, resd,
+    printf("angle:%d ,resd:%f, err:%f\n", i, resd,
            (180 / M_PI) * atan2(y, x) - resd);
   }
 }

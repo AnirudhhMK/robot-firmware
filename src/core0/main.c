@@ -52,7 +52,7 @@ int main() {
   launch_core1();
 
   q16_16_t theta_g = 0, theta_a = 0, theta = 0;
-  q16_16_t dtheta;
+  q16_16_t dtheta = 0;
 
   init_i2c();
   while (init_imu() != IMU_OK)
@@ -73,16 +73,19 @@ int main() {
         SIO->GPIO_OUT_XOR = (1 << DEBUG_LED_IO);
         x = 0;
       }
-      theta_a = arctan(imu_data->gyro_z, imu_data->gyro_x);
-      if (first_iter--)
+      theta_a =
+          arctan((q16_16_t)imu_data->accel_z, (q16_16_t)imu_data->accel_x);
+      if (first_iter) {
+        first_iter = 0;
         theta_g = theta_a;
-      else {
+      } else {
         dtheta = ((int64_t)magic * (int64_t)imu_data->gyro_y) >> (55 - 16);
         theta_g += dtheta;
       }
-      theta = 1311 * (theta + dtheta) +
-              64225 * theta_a; // 0.02 in q16_16_t is 1311
-                               // 0.98 in q16_16_t is 64225
+      theta = ((int64_t)64225 * (int64_t)(theta + dtheta) +
+               (int64_t)1311 * (int64_t)theta_a) >>
+              16; // 0.02 in q16_16_t is 1311
+                  // 0.98 in q16_16_t is 64225
       angle_estimate_dbuf.buf[angle_estimate_dbuf.writer] =
           (angle_estimate_payload_t){theta_a, theta_g, theta};
       angle_estimate_dbuf.writer ^= 1;

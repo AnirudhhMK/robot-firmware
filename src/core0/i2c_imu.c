@@ -97,8 +97,9 @@ enum imu_error init_imu(void) {
   I2C0->DATA_CMD = ACCEL_CONFIG;
   I2C0->DATA_CMD = (0x00) | (1 << 9);
   static uint32_t first_iter = 1;
-  if (first_iter--) { // for the first iteration of initializing add a 30ms
-                      // delay to get gyro to settle after powering on
+  if (first_iter) { // for the first iteration of initializing add a 30ms
+                    // delay to get gyro to settle after powering on
+    first_iter = 0;
     uint32_t time = TIMER->TIMERAWL;
     while (TIMER->TIMERAWL - time < 30 * 1000)
       ;
@@ -133,6 +134,10 @@ enum imu_error read_imu(imu_readings *imu_struct) {
                                       // account for big endiannes of imu data)
     val |= *ptr;
   }
+  imu_struct->gyro_x -= gyro_offset.offx;
+  imu_struct->gyro_y -= gyro_offset.offy;
+  imu_struct->gyro_z -= gyro_offset.offz;
+
   if (!val)
     return IMU_ASLEEP;
 

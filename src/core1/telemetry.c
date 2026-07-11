@@ -35,10 +35,10 @@ void telemetry_debug(Task *t) {
 }
 
 void telemetry_fast(Task *t) {
-  send_imu_payload(&imu_payload_dbuf.buf[imu_payload_dbuf.writer ^ 1]);
+  // send_imu_payload(&imu_payload_dbuf.buf[imu_payload_dbuf.writer ^ 1]);
   send_angle_estimate_payload(
       &angle_estimate_dbuf.buf[angle_estimate_dbuf.writer ^ 1]);
-  t->next_time = TIMER->TIMERAWL + 1000 * 100;
+  t->next_time = TIMER->TIMERAWL + 1000 * 10;
   schedule_timed_task(t);
 }
 

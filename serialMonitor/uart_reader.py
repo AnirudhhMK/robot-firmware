@@ -29,6 +29,7 @@ class angle_estimate_payload:
     def convert_to_float(self):
         self.theta_a/=(1 << 16)
         self.theta_g = (self.theta_g/(1 << 16)+180)%360 - 180
+        print("theta_a:",self.theta_a,self.theta_g)
         self.theta /= (1 << 16)
     @classmethod
     def from_bytes(cls,data):
@@ -40,8 +41,8 @@ def handle_angle_estimate(data,header):
     global comp,accel,gyro
     angle = angle_estimate_payload.from_bytes(data)
     comp.append(angle.theta)
-    accel.append(angle.theta_g)
-    gyro.append(angle.theta_a)
+    accel.append(angle.theta_a)
+    gyro.append(angle.theta_g)
     ##print(angle)
 
 @dataclass
