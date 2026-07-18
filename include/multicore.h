@@ -26,3 +26,9 @@ typedef struct {
   volatile uint8_t writer;
 } imu_payload_dbuf_t;
 extern imu_payload_dbuf_t imu_payload_dbuf;
+
+typedef struct {
+  loop_time_payload_t buf[2];
+  volatile uint8_t writer;
+} loop_time_payload_dbuf_t;
+extern loop_time_payload_dbuf_t loop_time_payload_dbuf;

@@ -65,6 +65,7 @@ int main() {
   uint32_t x = 0;
   uint8_t first_iter = 1;
   while (1) {
+    uint32_t start = TIMER->TIMERAWL;
     imu_readings *imu_data = &imu_payload_dbuf.buf[imu_payload_dbuf.writer];
     if (read_imu(imu_data) == IMU_OK) {
       x++;
@@ -82,19 +83,28 @@ int main() {
         dtheta = ((int64_t)magic * (int64_t)imu_data->gyro_y) >> (55 - 16);
         theta_g += dtheta;
       }
-      theta = ((int64_t)64225 * (int64_t)(theta + dtheta) +
-               (int64_t)1311 * (int64_t)theta_a) >>
-              16; // 0.02 in q16_16_t is 1311
-                  // 0.98 in q16_16_t is 64225
+      theta = ((int64_t)65405 * (int64_t)(theta + dtheta) +
+               (int64_t)131 * (int64_t)theta_a) >>
+              16; // 0.002 in q16_16_t is 131
+                  // 0.998 in q16_16_t is 65405
       angle_estimate_dbuf.buf[angle_estimate_dbuf.writer] =
           (angle_estimate_payload_t){theta_a, theta_g, theta};
       angle_estimate_dbuf.writer ^= 1;
-      uint32_t time = TIMER->TIMERAWL;
     }
 
     (void)I2C0->CLR_TX_ABRT;
     uint32_t time = TIMER->TIMERAWL;
-    while (TIMER->TIMERAWL - time < 1000)
+    uint32_t loop_time = time - start;
+    uint32_t *min =
+        &loop_time_payload_dbuf.buf[loop_time_payload_dbuf.writer].min_time;
+    uint32_t *max =
+        &loop_time_payload_dbuf.buf[loop_time_payload_dbuf.writer].max_time;
+    if (*min > loop_time || *min == 0)
+      *min = loop_time;
+    if (*max < loop_time)
+      *max = loop_time;
+    loop_time_payload_dbuf.writer ^= 1;
+    while (TIMER->TIMERAWL - start < 1000)
       ;
   }
 }

@@ -29,7 +29,7 @@ class angle_estimate_payload:
     def convert_to_float(self):
         self.theta_a/=(1 << 16)
         self.theta_g = (self.theta_g/(1 << 16)+180)%360 - 180
-        print("theta_a:",self.theta_a,self.theta_g)
+        #print("theta_a:",self.theta_a,self.theta_g)
         self.theta /= (1 << 16)
     @classmethod
     def from_bytes(cls,data):
@@ -76,7 +76,7 @@ def handle_imu(data,header):
     imu_data.accel_z /= 16384
 
     imu_data.temp = imu_data.temp/340 + 36.53
-    print(imu_data)
+    #print(imu_data)
 
 @dataclass
 class packet_header:

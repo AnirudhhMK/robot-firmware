@@ -25,11 +25,20 @@ typedef struct __attribute__((packed)) {
 
 typedef imu_readings imu_payload_t;
 
-typedef struct __attribute__((packed)) {
+typedef struct {
   q16_16_t theta_a;
   q16_16_t theta_g;
   q16_16_t theta;
 } angle_estimate_payload_t;
+_Static_assert(sizeof(angle_estimate_payload_t) == 3 * 4,
+               "size of angle_estimate_payload_t is wrong");
+
+typedef struct {
+  uint32_t min_time;
+  uint32_t max_time;
+} loop_time_payload_t;
+_Static_assert(sizeof(loop_time_payload_t) == 2 * 4,
+               "size of loop_time_payload_t is wrong");
 
 enum {
   PID_CONTROL = 1,
