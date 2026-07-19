@@ -14,6 +14,8 @@ void pwm_motor_init(void);
 
 void movement_control(int16_t avg, int16_t turn);
 
+void motor_coast(void);
+
 int main() {
   // pull all peripherals out of reset
   uint32_t reset_mask = (1 << 1) |  // busctrl
@@ -58,6 +60,7 @@ int main() {
   while (init_imu() != IMU_OK)
     (void)I2C0->CLR_TX_ABRT;
   calibrate_imu();
+  pwm_motor_init();
 
   //  SIO->GPIO_OUT_XOR = (1 << DEBUG_LED_IO);
   uint64_t magic = 275028984878; // dt/131 * (2^55)
@@ -90,9 +93,19 @@ int main() {
       angle_estimate_dbuf.buf[angle_estimate_dbuf.writer] =
           (angle_estimate_payload_t){theta_a, theta_g, theta};
       angle_estimate_dbuf.writer ^= 1;
+
+      // PID controller
+      q16_16_t e = 90 * (1 << 16) - theta;
+      q16_16_t omega = ((q16_16_t)imu_data->gyro_y) << 16;
+      q16_16_t output =
+          mulq16_16(pid_gains.Kp, e) - mulq16_16(pid_gains.Kd, omega);
+      movement_control(output >> 16, 0);
+    } else {
+      motor_coast();
     }
 
     (void)I2C0->CLR_TX_ABRT;
+    // logging the time the main loop takes to complete
     uint32_t time = TIMER->TIMERAWL;
     uint32_t loop_time = time - start;
     uint32_t *min =
@@ -104,7 +117,7 @@ int main() {
     if (*max < loop_time)
       *max = loop_time;
     loop_time_payload_dbuf.writer ^= 1;
-    while (TIMER->TIMERAWL - start < 1000)
+    while (TIMER->TIMERAWL - start < 1000) // the control loop must run at 1ms
       ;
   }
 }
@@ -115,6 +128,12 @@ void pwm_motor_init(void) {
   PWM->CH[MOTOR_PWM_SLICE].CSR = 1;
 }
 
+void motor_coast(void) {
+  SIO->GPIO_OUT_CLR = (1 << LMOTOR_OUT_B_IO);
+  SIO->GPIO_OUT_CLR = (1 << LMOTOR_OUT_F_IO);
+  SIO->GPIO_OUT_CLR = (1 << RMOTOR_OUT_B_IO);
+  SIO->GPIO_OUT_CLR = (1 << RMOTOR_OUT_F_IO);
+}
 void movement_control(int16_t avg, int16_t turn) {
   int32_t rmotor = avg - turn;
   int32_t lmotor = avg + turn;

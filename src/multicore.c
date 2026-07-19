@@ -36,3 +36,4 @@ pwm_data_dbuf_t pwm_data_dbuf;
 angle_estimate_dbuf_t angle_estimate_dbuf;
 imu_payload_dbuf_t imu_payload_dbuf;
 loop_time_payload_dbuf_t loop_time_payload_dbuf;
+pid_gains_t pid_gains = {(1 << 16), 0, 0};

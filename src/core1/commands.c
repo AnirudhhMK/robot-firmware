@@ -1,3 +1,4 @@
+#include "multicore.h"
 #include "regs.h"
 #include "scheduler.h"
 #include "uart_comms.h"
@@ -9,6 +10,13 @@ void process_commands_task(Task *t) {
     case CMD_DEBUG:
       // SIO->GPIO_OUT_XOR = (1 << 25);
       break;
+    case CMD_SET_P:
+      pid_gains.Kp = pack.value;
+      break;
+    case CMD_SET_D:
+      pid_gains.Kd = pack.value;
+      break;
+
     default:
       break;
     }

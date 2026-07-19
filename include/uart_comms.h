@@ -49,6 +49,8 @@ enum {
 
 enum {
   CMD_DEBUG = 1,
+  CMD_SET_P = 2,
+  CMD_SET_D = 3,
 };
 
 void init_uart_comms(void);

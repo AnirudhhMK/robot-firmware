@@ -45,7 +45,9 @@ ani = animation.FuncAnimation(fig,
     interval=50,
     blit=True)
 
-thread = threading.Thread(target=uart_reader.uart_worker,daemon=True)
+thread = threading.Thread(target=uart_reader.uart_worker,daemon=True,name="telemetry worker")
+thread2 = threading.Thread(target=uart_reader.send_command,daemon=True,name="commands worker")
 thread.start()
+thread2.start()
 
 plt.show()

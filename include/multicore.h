@@ -32,3 +32,8 @@ typedef struct {
   volatile uint8_t writer;
 } loop_time_payload_dbuf_t;
 extern loop_time_payload_dbuf_t loop_time_payload_dbuf;
+
+typedef struct {
+  q16_16_t Kp, Kd, Ki;
+} pid_gains_t;
+extern pid_gains_t pid_gains;

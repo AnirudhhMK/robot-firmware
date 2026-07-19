@@ -9,6 +9,12 @@ PID_CONTROL = 1
 PID_IMU_DATA = 2
 PID_ANGLE_ESTIMATE = 3
 PID_MSG = 4
+
+
+CMD_DEBUG = 1
+CMD_SET_P = 2
+CMD_SET_D = 3
+
 gyro = None
 accel = None
 comp = None
@@ -16,8 +22,8 @@ comp = None
 def init_worker(gyro_q,accel_q,comp_q):
     global gyro,accel,comp 
     gyro,accel,comp = gyro_q,accel_q,comp_q
-def handle_msg(data,header):
-    print(data.decode("utf-8"))
+def handle_msg(data,header):pass
+    #print(data.decode("utf-8"))
 
 @dataclass
 class angle_estimate_payload:
@@ -117,4 +123,23 @@ def uart_worker():
                     del buf[:header.length+header.SIZE]
                     continue 
             del buf[:1]
+
+def send_command():
+    while True:
+        tokens = input("Send command:").strip().split()
+        if len(cmd) != 2:
+            print("Usage: set_p <value>")
+            continue
+        commands = {"set_p":CMD_SET_P,"set_d":CMD_SET_D}
+        cmd = commands.get(tokens[0],None)
+        try:
+            val = int(float(tokens[1])*(1<<16))
+        except ValueError:
+            print("Value must be an integer")
+            continue
+        if cmd == None:
+            print(f"Invalid command, valid commands are :{list(commands.keys())}")
+            continue
+        command = struct.pack("<HHI",0x55aa,cmd,val)
+        ser.write(command)
 
