@@ -9,11 +9,16 @@ all: bin/main.elf
 
 build/%.o : %.c
 	@mkdir -p $(dir $@)
-	arm-none-eabi-gcc -c $(CFLAGS) $< -o $@
+	arm-none-eabi-g++ -c $(CFLAGS) $< -o $@
+
+build/%.o : %.cpp
+	@mkdir -p $(dir $@)
+	arm-none-eabi-g++ -c $(CFLAGS) $< -o $@
+
 
 build/%.o : %.S
 	@mkdir -p $(dir $@)
-	arm-none-eabi-gcc -c $(CFLAGS) $< -o $@
+	arm-none-eabi-g++ -c $(CFLAGS) $< -o $@
 
 
 bin/main.elf:$(OBJ) boot/script.ld makefile

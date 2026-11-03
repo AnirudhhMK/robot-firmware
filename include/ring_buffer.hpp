@@ -1,7 +1,39 @@
 #pragma once
+#include <stddef.h>
 #include <stdint.h>
 
-typedef struct {
+template <size_t size> class Ring_buffer {
+  static_assert((size > 0) & ((size & (size - 1)) == 0),
+                "ring buffer size must be a power of 2");
+
+public:
+  static constexpr size_t mask = size - 1;
+  uint32_t writer = 0, reader = 0;
+  uint8_t data[size];
+  Ring_buffer() {}
+  int32_t write(const uint8_t *msg, size_t length) {
+    if ((writer + length) - reader > mask + 1)
+      return -1; // maybe return the amount of excess space needed?
+    uint32_t w = writer;
+    for (size_t i = 0; i < length; i++) {
+      data[w++ & mask] = msg[i];
+    }
+    writer = w;
+    return 0;
+  }
+  int32_t read(uint8_t *data, size_t length) {
+    if ((reader + length) > writer)
+      return -1;
+    uint32_t r = reader;
+    for (uint32_t i = 0; i < length; i++) {
+      data[i] = data[r++ & mask];
+    }
+    reader = r;
+    return 0;
+  }
+  uint32_t const space() { return size + (writer - reader); }
+};
+/*typedef struct {
   uint8_t *data;
   uint32_t writer, reader;
   uint32_t mask;
@@ -47,3 +79,4 @@ int32_t Rbuf_write_bulk(ringbuf_handle_t buf, uint8_t *data, uint32_t size);
 int32_t Rbuf_read_bulk(ringbuf_handle_t buf, uint8_t *data, uint32_t size);
 
 int32_t Rbuf_check_availability(ringbuf_handle_t buf, uint32_t space);
+*/

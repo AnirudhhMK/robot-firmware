@@ -1,20 +1,14 @@
-#include "uart_comms.h"
+#include "uart_comms.hpp"
 #include "regs.h"
-#include "ring_buffer.h"
+#include "ring_buffer.hpp"
 #include "scheduler.h"
 #include <stdint.h>
+
 #define TXBUF_LEN_LOG 10
 #define RXBUF_LEN_LOG 8
-static uint8_t tx_buf[1 << TXBUF_LEN_LOG]
-    __attribute__((aligned(1 << TXBUF_LEN_LOG)));
-static uint8_t rx_buf[1 << RXBUF_LEN_LOG]
-    __attribute__((aligned(1 << RXBUF_LEN_LOG)));
-ringbuf_handle_t uart_tx_queue =
-    &(ringbuf_t){tx_buf, 0, 0, (1 << TXBUF_LEN_LOG) - 1};
-ringbuf_handle_t uart_rx_queue =
-    &(ringbuf_t){rx_buf, 0, 0, (1 << RXBUF_LEN_LOG) - 1};
-
-void init_uart_comms(void) {
+Ring_buffer<(1 << TXBUF_LEN_LOG)> uart_tx_queue;
+Ring_buffer<(1 << RXBUF_LEN_LOG)> uart_rx_queue;
+void uart::init(void) {
   // assumes DMA and UART is pulled out of reset
   // configure UART
   // configure baud rate to 115207.3732718894
@@ -56,12 +50,12 @@ void init_uart_comms(void) {
       (0b00 << 2) | // 1 byte per transfer
       (1 << 0);     // dma enable
 
-  DMA->CH[0].AL1_READ_ADDR = (uint32_t)uart_tx_queue->data;
+  DMA->CH[0].AL1_READ_ADDR = (uint32_t)uart_tx_queue.data;
   DMA->CH[0].AL1_WRITE_ADDR = (uint32_t)&UART0->UARTDR;
   // transfer count is the trigger, once the tx buffer starts filling with
   // packets, the dma handler is called which starts the transfer sequence
   //
-  DMA->CH[1].AL1_WRITE_ADDR = (uint32_t)uart_rx_queue->data;
+  DMA->CH[1].AL1_WRITE_ADDR = (uint32_t)uart_rx_queue.data;
   DMA->CH[1].AL1_READ_ADDR = (uint32_t)&UART0->UARTDR;
   DMA->CH[1].AL1_TRANS_COUNT_TRIG = ((1ull << 32) - 1);
   ACCESS_OFFSET(DMA->INTE0, hw_set) =
@@ -74,7 +68,7 @@ void inline uart_tx_kick(void) {
   // doesn't do anything if a transfer sequence is in progressm and this updated
   // value just gets stored in reload register which we never use anyway
   DMA->CH[0].AL1_TRANS_COUNT_TRIG =
-      (uart_tx_queue->writer - uart_tx_queue->reader);
+      (uart_tx_queue.writer - uart_tx_queue.reader);
 }
 
 void inline uart_tx_update_reader(void) {
@@ -84,74 +78,84 @@ void inline uart_tx_update_reader(void) {
   // such that this condition is satisfied and, &uart_tx_queue[new_reader &
   // mask] = dma_reader_addr so let new_reader_masked be new_reader & mask
   uint32_t new_reader_masked =
-      (DMA->CH[0].AL1_READ_ADDR - (uint32_t)uart_tx_queue->data) /
-      sizeof(uart_tx_queue->data[0]);
+      (DMA->CH[0].AL1_READ_ADDR - (uint32_t)uart_tx_queue.data) /
+      sizeof(uart_tx_queue.data[0]);
   // Note : rp2040:E14 causes the address read from READ_ADDR to not be wrapped
   // if its read while a transfer is underway, this however doesn't matter as we
   // take modulo size for the math anyways
-  uint32_t old_reader = uart_tx_queue->reader;
-  uint32_t mask = uart_tx_queue->mask;
-  uart_tx_queue->reader =
-      ((new_reader_masked - old_reader) & mask) + old_reader;
+  uint32_t old_reader = uart_tx_queue.reader;
+  uint32_t mask = uart_tx_queue.mask;
+  uart_tx_queue.reader = ((new_reader_masked - old_reader) & mask) + old_reader;
   // now new reader is the closes value above old reader satisfying the 2
   // conditions
 }
 
 void inline uart_rx_update_writer() {
   uint32_t new_writer_masked =
-      (DMA->CH[1].AL1_WRITE_ADDR - (uint32_t)uart_rx_queue->data) /
-      sizeof(uart_rx_queue->data[0]);
-  uint32_t old_writer = uart_rx_queue->writer;
-  uint32_t mask = uart_rx_queue->mask;
-  uart_rx_queue->writer =
-      ((new_writer_masked - old_writer) & mask) + old_writer;
+      (DMA->CH[1].AL1_WRITE_ADDR - (uint32_t)uart_rx_queue.data) /
+      sizeof(uart_rx_queue.data[0]);
+  uint32_t old_writer = uart_rx_queue.writer;
+  uint32_t mask = uart_rx_queue.mask;
+  uart_rx_queue.writer = ((new_writer_masked - old_writer) & mask) + old_writer;
 }
 
-int32_t
-uart_tx_send(packet_header_t *packet_header,
-             uint8_t *payload) { // we assume that core0 is the only producer
-                                 // and that ISRs won't write to the ring buffer
-                                 // (im not disabling interrupts)
-  uart_tx_update_reader();
-  int32_t ret = Rbuf_check_availability(
-      uart_tx_queue, sizeof(packet_header_t) + packet_header->payload_len);
-  if (ret != 0)
-    return ret;
-  Rbuf_write_bulk(uart_tx_queue, (uint8_t *)packet_header,
-                  sizeof(packet_header_t));
-
-  Rbuf_write_bulk(uart_tx_queue, (uint8_t *)payload,
-                  packet_header->payload_len);
+int32_t uart::send(const uint8_t *const message[], const size_t *sizes,
+                   size_t length) {
+  size_t sum = 0;
+  for (size_t i = 0; i < length; i++)
+    sum += sizes[i];
+  size_t space = uart_tx_queue.space() - sum;
+  if (space < 0)
+    return -1;
+  for (size_t i = 0; i < length; i++) {
+    uart_tx_queue.write(message[i], sizes[i]);
+  }
   uart_tx_kick();
-  return ret;
+  return space;
+}
+int32_t
+uart::send(packet_header_t *packet_header,
+           uint8_t *payload) { // we assume that core0 is the only producer
+                               // and that ISRs won't write to the ring buffer
+                               // (im not disabling interrupts)
+  uart_tx_update_reader();
+  size_t space = uart_tx_queue.space() -
+                 (sizeof(packet_header_t) + packet_header->payload_len);
+  if (space < 0) {
+    return -1;
+  }
+  uart_tx_queue.write((uint8_t *)packet_header, sizeof(packet_header_t));
+
+  uart_tx_queue.write((uint8_t *)payload, packet_header->payload_len);
+  uart_tx_kick();
+  return space;
 }
 
-int32_t uart_rx_get(command_packet_t *packet) {
+int32_t uart::get(command_packet_t *packet) {
   // Note: we are depending on the assumption that overflows don't happen, if it
   // does we are not handling it, and just pretending that its all okay
 
   uart_rx_update_writer();
   int32_t n =
-      uart_rx_queue->writer - uart_rx_queue->reader - sizeof(command_packet_t);
-  uint32_t r = uart_rx_queue->reader;
+      uart_rx_queue.writer - uart_rx_queue.reader - sizeof(command_packet_t);
+  uint32_t r = uart_rx_queue.reader;
   while (n >= 0) {
-    if (uart_rx_queue->data[r & uart_rx_queue->mask] == 0xaa)
-      if (uart_rx_queue->data[(r + 1) & uart_rx_queue->mask] == 0x55) {
-        uart_rx_queue->reader = r;
-        return Rbuf_read_bulk(uart_rx_queue, (uint8_t *)packet,
-                              sizeof(command_packet_t));
+    if (uart_rx_queue.data[r & uart_rx_queue.mask] == 0xaa)
+      if (uart_rx_queue.data[(r + 1) & uart_rx_queue.mask] == 0x55) {
+        uart_rx_queue.reader = r;
+        return uart_tx_queue.read((uint8_t *)packet, sizeof(command_packet_t));
       }
     r++;
     n--;
   }
-  uart_rx_queue->reader = r;
+  uart_rx_queue.reader = r;
   return -1;
 }
 
-void uart_rx_DMA_handler(void) {
+void uart::rx_DMA_handler(void) {
   DMA->CH[1].AL1_TRANS_COUNT_TRIG = (1ull << 32) - 1;
 }
-void uart_tx_DMA_handler(void) {
+void uart::tx_DMA_handler(void) {
   // assuming channel0 interrupt is already cleared by the IRQ that called this
   uart_tx_update_reader();
   uart_tx_kick(); // we don't need to check if the queue is empty because

@@ -1,6 +1,7 @@
 #pragma once
 #include "i2c_imu.h"
 #include "math.h"
+#include <stddef.h>
 #include <stdint.h>
 
 typedef struct __attribute__((packed)) {
@@ -53,11 +54,13 @@ enum {
   CMD_SET_D = 3,
 };
 
-void init_uart_comms(void);
-void uart_tx_kick(void);
-void uart_tx_update_reader(void);
-int32_t uart_tx_send(packet_header_t *packet_header, uint8_t *payload);
-void uart_tx_DMA_handler(void);
+namespace uart {
+void init(void);
+int32_t send(packet_header_t *packet_header, uint8_t *payload);
+int32_t send(const uint8_t *const message[], const size_t sizes[],
+             size_t length);
+void tx_DMA_handler(void);
 
-int32_t uart_rx_get(command_packet_t *packet);
-void uart_rx_DMA_handler();
+int32_t get(command_packet_t *packet);
+void rx_DMA_handler();
+} // namespace uart
