@@ -408,6 +408,6 @@ typedef struct {
 
 #define I2C0 ((i2c_hw_t *)i2c0_base)
 #define I2C1 ((i2c_hw_t *)i2c1_base)
-_Static_assert(sizeof(i2c_hw_t) == 0x100, "Sanity check");
+static_assert(sizeof(i2c_hw_t) == 0x100, "Sanity check");
 
 #endif

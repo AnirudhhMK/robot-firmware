@@ -1,11 +1,11 @@
 #include "config.h"
-#include "multicore.h"
+#include "multicore.hpp"
 // #include "nRF.h"
 #include "config.h"
 #include "i2c_imu.h"
 #include "math.h"
 #include "regs.h"
-#include "uart_comms.h"
+#include "uart_comms.hpp"
 #include <stdint.h>
 
 void main_core1(void);
@@ -165,7 +165,7 @@ void movement_control(int16_t avg, int16_t turn) {
   PWM->CH[MOTOR_PWM_SLICE].CC =
       (rmotor << (16 * RMOTOR_PWM_CH)) | (lmotor << (16 * LMOTOR_PWM_CH));
 
-  pwm_data_dbuf.buf[pwm_data_dbuf.writer] = (pwm_data){lmotor, rmotor};
+  //  pwm_data_dbuf.buf[pwm_data_dbuf.writer] = (pwm_data){lmotor, rmotor};
   pwm_data_dbuf.writer ^= 1; // swap
 }
 

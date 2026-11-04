@@ -11,7 +11,7 @@ enum imu_error {
   IMU_TIMEOUT,
   IMU_ASLEEP,
 };
-_Static_assert(sizeof(imu_readings) == 14,
+static_assert(sizeof(imu_readings) == 14,
                "imu_readings struct is of wrong size");
 
 void init_i2c(void);

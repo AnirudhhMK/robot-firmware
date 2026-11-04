@@ -1,4 +1,4 @@
-#include "multicore.h"
+#include "multicore.hpp"
 #include "regs.h"
 #include <stdint.h>
 

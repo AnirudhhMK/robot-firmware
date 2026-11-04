@@ -3,7 +3,7 @@
 #include "regs.h"
 #include "scheduler.h"
 #include "tasks.h"
-#include "uart_comms.h"
+#include "uart_comms.hpp"
 #include <stdint.h>
 
 #define QUEUE_SIZE 4
@@ -21,7 +21,7 @@ Task tasklist[QUEUE_SIZE] = {{1, 1, 0, &send_code},
 __attribute__((section(".ramcode"))) void main_core1(void) {
   NVIC->ISER[0] = (1 << 0) | // enable timer_irq_0 (alarm0)
                   (1 << 11); // enable dma_irq_0
-  init_uart_comms();
+  uart::init();
   SYSTICK->RVR = (1 << 24) - 1;
   SYSTICK->CSR =
       (1 << 0) | (1 << 2); // enable systick and clck source is processor clock
@@ -82,10 +82,10 @@ void __attribute__((interrupt)) DMA_IRQ_0(void) {
   uint32_t status = DMA->INTS0;
   if (status & (1 << 0)) {
     DMA->INTS0 = 1 << 0;
-    uart_tx_DMA_handler();
+    uart::tx_DMA_handler();
   }
   if (status & (1 << 1)) {
     DMA->INTS0 = 1 << 1;
-    uart_rx_DMA_handler();
+    uart::rx_DMA_handler();
   }
 }

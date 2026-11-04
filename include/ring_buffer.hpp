@@ -42,7 +42,7 @@ public:
 typedef ringbuf_t *ringbuf_handle_t;
 
 #define CREATE_RINGBUF(name, size)                                             \
-  _Static_assert(size & (size - 1) != 0,                                       \
+  static_assert(size & (size - 1) != 0,                                       \
                  "Ring buffer size must be a power of 2");                     \
   do {                                                                         \
     ringbuf_handle_t name = &(ringbuf_t){.data = (uint8_t[size]){0},           \
