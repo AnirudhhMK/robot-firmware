@@ -1,4 +1,4 @@
-#include "config.h"
+#include "config.hpp"
 #include "math.h"
 #include "regs.h"
 #include "scheduler.h"
@@ -21,7 +21,7 @@ Task tasklist[QUEUE_SIZE] = {{1, 1, 0, &send_code},
 __attribute__((section(".ramcode"))) void main_core1(void) {
   NVIC->ISER[0] = (1 << 0) | // enable timer_irq_0 (alarm0)
                   (1 << 11); // enable dma_irq_0
-  uart::init();
+  uart::init(UartPeri::uart0);
   SYSTICK->RVR = (1 << 24) - 1;
   SYSTICK->CSR =
       (1 << 0) | (1 << 2); // enable systick and clck source is processor clock

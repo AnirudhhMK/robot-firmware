@@ -1,4 +1,4 @@
-#include "config.h"
+#include "config.hpp"
 #include "regs.h"
 #include "scheduler.h"
 #include <stdint.h>

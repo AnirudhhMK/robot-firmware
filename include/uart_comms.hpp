@@ -1,5 +1,6 @@
 #pragma once
-#include "i2c_imu.h"
+#include "config.hpp"
+#include "i2c_imu.hpp"
 #include "math.h"
 #include "regs.h"
 #include <stddef.h>
@@ -39,14 +40,14 @@ typedef struct {
   q16_16_t theta;
 } angle_estimate_payload_t;
 static_assert(sizeof(angle_estimate_payload_t) == 3 * 4,
-               "size of angle_estimate_payload_t is wrong");
+              "size of angle_estimate_payload_t is wrong");
 
 typedef struct {
   uint32_t min_time;
   uint32_t max_time;
 } loop_time_payload_t;
 static_assert(sizeof(loop_time_payload_t) == 2 * 4,
-               "size of loop_time_payload_t is wrong");
+              "size of loop_time_payload_t is wrong");
 
 struct __attribute__((packed)) packet_header_t {
   uint16_t sync;
@@ -73,12 +74,18 @@ struct __attribute__((packed)) packet_header_t {
     timestamp = TIMER->TIMERAWL;
   }
 };
+enum class UartPeri { uart0, uart1 };
 
 namespace uart {
-void init(void);
+struct MessageArray {
+  const uint8_t *message;
+  size_t size;
+};
+void init(UartPeri uartn, config::UartConfig &conf);
 int32_t send(packet_header_t *packet_header, uint8_t *payload);
 int32_t send(const uint8_t *const message[], const size_t sizes[],
              size_t length);
+int32_t send(uart::MessageArray message[], size_t length);
 void tx_DMA_handler(void);
 
 int32_t get(command_packet_t *packet);

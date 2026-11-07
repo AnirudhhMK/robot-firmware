@@ -8,23 +8,26 @@
 #define RXBUF_LEN_LOG 8
 Ring_buffer<(1 << TXBUF_LEN_LOG)> uart_tx_queue;
 Ring_buffer<(1 << RXBUF_LEN_LOG)> uart_rx_queue;
-void uart::init(void) {
+void uart::init(UartPeri uartn,
+                config::UartConfig
+                    &config) { // TODO: complete adding config into the function
+  uart_hw_t *const UARTN = (uartn == UartPeri::uart0) ? UART0 : UART1;
   // assumes DMA and UART is pulled out of reset
   // configure UART
   // configure baud rate to 115207.3732718894
-  UART0->UARTIBRD = 54;
-  UART0->UARTFBRD = 25;
+  UARTN->UARTIBRD = 54;
+  UARTN->UARTFBRD = 25;
 
-  UART0->UARTLCR_H = (1 << 1) |   // enable parity check, default to odd parity
+  UARTN->UARTLCR_H = (1 << 1) |   // enable parity check, default to odd parity
                      (1 << 4) |   // enable fifo
                      (0b11 << 5); // 8 bit data size
 
-  UART0->UARTCR = (1 << 0) | // uart enable
+  UARTN->UARTCR = (1 << 0) | // uart enable
                   (1 << 8) | // rx enable
                   (1 << 9) | // tx enable
                   (0 << 7);  // no LPE
 
-  UART0->UARTDMACR = (1 << 0) | // transmit dma enabled
+  UARTN->UARTDMACR = (1 << 0) | // transmit dma enabled
                      (1 << 1);  // recieve dma enabled
 
   // configure DMA channel 0 for tx, channel 1 for rx
@@ -51,12 +54,12 @@ void uart::init(void) {
       (1 << 0);     // dma enable
 
   DMA->CH[0].AL1_READ_ADDR = (uint32_t)uart_tx_queue.data;
-  DMA->CH[0].AL1_WRITE_ADDR = (uint32_t)&UART0->UARTDR;
+  DMA->CH[0].AL1_WRITE_ADDR = (uint32_t)&UARTN->UARTDR;
   // transfer count is the trigger, once the tx buffer starts filling with
   // packets, the dma handler is called which starts the transfer sequence
   //
   DMA->CH[1].AL1_WRITE_ADDR = (uint32_t)uart_rx_queue.data;
-  DMA->CH[1].AL1_READ_ADDR = (uint32_t)&UART0->UARTDR;
+  DMA->CH[1].AL1_READ_ADDR = (uint32_t)&UARTN->UARTDR;
   DMA->CH[1].AL1_TRANS_COUNT_TRIG = ((1ull << 32) - 1);
   ACCESS_OFFSET(DMA->INTE0, hw_set) =
       (1 << 0) | (1 << 1); // enable interrupts for channel 0 and channel 1
@@ -97,6 +100,20 @@ void inline uart_rx_update_writer() {
   uint32_t old_writer = uart_rx_queue.writer;
   uint32_t mask = uart_rx_queue.mask;
   uart_rx_queue.writer = ((new_writer_masked - old_writer) & mask) + old_writer;
+}
+
+int32_t uart::send(uart::MessageArray message[], size_t length) {
+  size_t sum = 0;
+  for (size_t i = 0; i < length; i++)
+    sum += message[i].size;
+  size_t space = uart_tx_queue.space() - sum;
+  if (space < 0)
+    return -1;
+  for (size_t i = 0; i < length; i++) {
+    uart_tx_queue.write(message[i].message, message[i].size);
+  }
+  uart_tx_kick();
+  return space;
 }
 
 int32_t uart::send(const uint8_t *const message[], const size_t *sizes,

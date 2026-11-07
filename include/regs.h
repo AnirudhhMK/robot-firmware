@@ -1,5 +1,9 @@
 #pragma once
-
+#ifdef __cplusplus
+#define STATIC_ASSERT static_assert
+#else
+#define STATIC_ASSERT _Static_assert
+#endif
 #define sio_base 0xd0000000 // SIO base 2.3.1.7
 
 #define watchdog_base 0x40058000
@@ -408,6 +412,6 @@ typedef struct {
 
 #define I2C0 ((i2c_hw_t *)i2c0_base)
 #define I2C1 ((i2c_hw_t *)i2c1_base)
-static_assert(sizeof(i2c_hw_t) == 0x100, "Sanity check");
+STATIC_ASSERT(sizeof(i2c_hw_t) == 0x100, "Sanity check");
 
 #endif
